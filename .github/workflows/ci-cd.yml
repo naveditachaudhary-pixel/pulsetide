@@ -33,10 +33,13 @@ jobs:
             .deploy/
             web/dist/
 
+  # Optional: publish the dashboard from this repo's own GitHub Pages site. Turned off by default because
+  # the dashboard is published inside the portfolio site (see README); set the repo variable
+  # DEPLOY_PAGES to "true" and enable Pages (Source: GitHub Actions) to use this instead.
   pages:
     name: Deploy dashboard (GitHub Pages)
     needs: test
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.DEPLOY_PAGES == 'true'
     runs-on: ubuntu-latest
     permissions:
       pages: write

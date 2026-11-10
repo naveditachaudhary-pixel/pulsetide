@@ -101,9 +101,14 @@ The tests start [Azurite](https://learn.microsoft.com/azure/storage/common/stora
 
 ### On GitHub (current)
 
-1. In the repo, go to **Settings → Pages** and set **Source** to **GitHub Actions**.
-2. Push to `main`. The CI/CD workflow tests everything and publishes the dashboard.
-3. In **Actions → Checks**, click **Run workflow** once to create the data branch. After that it runs on its own schedule.
+- **Checks:** the Checks workflow in this repo runs on its own schedule. The first run creates the `status-data` branch.
+- **Dashboard:** a static build, published as part of my portfolio site at `/pulsetide/`. It reads `status.json` live from the `status-data` branch, so it only needs rebuilding when the dashboard code changes:
+
+  ```bash
+  npm run build:pages   # writes web/dist; copy it into the portfolio repo's pulsetide/ folder
+  ```
+
+- **Alternative:** to publish from this repo's own Pages site instead, enable Pages with **Source: GitHub Actions**, then set the repository variable `DEPLOY_PAGES` to `true`.
 
 ### On Azure
 

@@ -15,7 +15,8 @@
     "dev": "npm run dev -w web",
     "package:api": "node scripts/package-function.mjs api",
     "package:checker": "node scripts/package-function.mjs checker",
-    "build:runner": "node scripts/build-runner.mjs"
+    "build:runner": "node scripts/build-runner.mjs",
+    "build:pages": "VITE_BASE=/pulsetide/ VITE_HOSTING=github VITE_STATUS_URL=https://raw.githubusercontent.com/naveditachaudhary-pixel/pulsetide/status-data/status.json npm run build -w web"
   },
   "engines": {
     "node": ">=22"
