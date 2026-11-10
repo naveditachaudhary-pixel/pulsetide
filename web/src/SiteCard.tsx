@@ -27,8 +27,7 @@ export function SiteCard({ site }: { site: SiteSummary }) {
       <div className="bars" onMouseLeave={() => setHover(null)} role="img"
            aria-label={`Daily uptime for the last 90 days: ${pct(site.uptime.d90)} overall`}>
         {site.days.map((d, i) => (
-          <span key={d.date} className={`bar ${band(d.uptime)}`} onMouseEnter={() => setHover(i)}
-                title={`${day(d.date)}: ${d.uptime === null ? "no data" : pct(d.uptime)}`} />
+          <span key={d.date} className={`bar ${band(d.uptime)}`} onMouseEnter={() => setHover(i)} />
         ))}
       </div>
       <div className="bar-legend">

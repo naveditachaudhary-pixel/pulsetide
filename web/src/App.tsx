@@ -17,7 +17,10 @@ export function App() {
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch(STATUS_URL, { headers: { accept: "application/json" }, cache: "no-store" });
+      // On GitHub the file is served through a CDN that caches each copy for up to 5 minutes, and its
+      // edge servers don't all update together. A unique query string always gets the latest version.
+      const url = ON_GITHUB ? `${STATUS_URL}${STATUS_URL.includes("?") ? "&" : "?"}t=${Date.now()}` : STATUS_URL;
+      const res = await fetch(url, { headers: { accept: "application/json" }, cache: "no-store" });
       const body = await res.json().catch(() => null);
       if (!res.ok) throw new Error(body?.error ?? `The status service answered ${res.status}.`);
       setData(body as StatusPayload);

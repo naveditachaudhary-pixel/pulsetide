@@ -57,3 +57,18 @@ describe("formatting", () => {
     expect(pct(null)).toBe("–");
   });
 });
+
+describe("hosted on GitHub", () => {
+  it("asks for a fresh copy of status.json every time, so a CDN can't serve an old one", async () => {
+    vi.resetModules();
+    vi.stubEnv("VITE_HOSTING", "github");
+    vi.stubEnv("VITE_STATUS_URL", "https://raw.example.test/status.json");
+    const fetchMock = vi.fn(async (_url: string) => new Response(JSON.stringify(payload), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const { App: GitHubApp } = await import("./App");
+    render(<GitHubApp />);
+    await screen.findByText("1 site is down");
+    expect(String(fetchMock.mock.calls[0]![0])).toMatch(/^https:\/\/raw\.example\.test\/status\.json\?t=\d+$/);
+    vi.unstubAllEnvs();
+  });
+});
