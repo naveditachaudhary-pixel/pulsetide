@@ -28,7 +28,7 @@ It runs entirely on GitHub today, using Actions for the checks and Pages for the
 
 ```mermaid
 flowchart LR
-    T[Scheduled workflow<br/>about every 5 min] --> R[run-checks<br/>GitHub Actions]
+    T[Long-running workflow<br/>checks every 5 min] --> R[run-checks<br/>GitHub Actions]
     R -->|HTTP checks| S[Portfolio · Cosignal · memory agent demos]
     R -->|status.json + history| B[(status-data branch)]
     B -->|fetched by the browser| W[React dashboard<br/>GitHub Pages]
@@ -38,7 +38,7 @@ flowchart LR
 - **Data branch:** each run replaces that branch's single commit, so the repo doesn't grow by thousands of commits.
 - **Dashboard:** built once on GitHub Pages. It reads `status.json` straight from the data branch, so new results show up without redeploying.
 - **Size limits:** raw checks are kept for 25 hours, and daily rollups for about a year. The branch stays well under 1 MB.
-- **Caveat:** GitHub starts scheduled jobs on a best-effort basis, so runs can be a few minutes late. GitHub also pauses scheduled workflows in a public repo after 60 days without activity. If that happens, re-enable it from the Actions tab.
+- **Working around GitHub's scheduler:** GitHub starts scheduled jobs on a best-effort basis and often skips 5-minute schedules entirely. So each workflow run loops for about 5.5 hours, checking every 5 minutes and saving after each round, and an hourly schedule queues the next run behind it. The hourly trigger only has to fire once per window to keep the checks continuous. GitHub also pauses scheduled workflows in a public repo after 60 days without activity; if that happens, re-enable it from the Actions tab.
 
 ### Azure version
 

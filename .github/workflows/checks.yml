@@ -1,12 +1,19 @@
 name: Checks
 
-# Runs the site checks on a schedule and saves the results to the "status-data" branch.
-# GitHub runs scheduled jobs on a best-effort basis, so runs can start a few minutes late.
+# Checks every site about every 5 minutes and saves the results to the "status-data" branch.
+# GitHub starts scheduled jobs on a best-effort basis and often skips short intervals,
+# so instead of relying on a 5-minute schedule, each run loops for about 5.5 hours,
+# checking every 5 minutes. The hourly schedule only has to fire once in that window
+# to keep the checks continuous; the concurrency group queues the next run behind it.
 # If the schedule ever stops (GitHub pauses it after 60 days without activity), re-enable it in the Actions tab.
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "7 * * * *"
   workflow_dispatch:
+    inputs:
+      loop_minutes:
+        description: "How long to keep checking (minutes). Use 0 for a single check."
+        default: "330"
 
 permissions:
   contents: write
@@ -18,7 +25,7 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 345
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -37,15 +44,26 @@ jobs:
             echo "First run: starting with empty history."
           fi
 
-      - name: Check every site
-        run: node .deploy/run-checks.mjs data
-
-      - name: Save results
-        # One commit, force-pushed each time, so the data branch never grows a long history.
+      - name: Check every 5 minutes, saving results after each round
+        env:
+          LOOP_MINUTES: ${{ inputs.loop_minutes || '330' }}
+          PUSH_URL: https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
         run: |
-          cd data
-          git init -q -b status-data
-          git add -A
-          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
-            commit -q -m "Status at $(date -u +%Y-%m-%dT%H:%MZ)"
-          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" status-data
+          end=$(( $(date +%s) + LOOP_MINUTES * 60 ))
+          while :; do
+            node .deploy/run-checks.mjs data || echo "::warning::check round failed"
+            # One commit, force-pushed each time, so the data branch never grows a long history.
+            (
+              cd data
+              rm -rf .git
+              git init -q -b status-data
+              git add -A
+              git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+                commit -q -m "Status at $(date -u +%Y-%m-%dT%H:%MZ)"
+              git push -q -f "$PUSH_URL" status-data
+            ) || echo "::warning::saving results failed"
+            now=$(date +%s)
+            next=$(( (now / 300 + 1) * 300 ))   # next 5-minute mark
+            [ "$next" -ge "$end" ] && break
+            sleep $(( next - now ))
+          done
