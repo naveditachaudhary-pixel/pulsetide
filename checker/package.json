@@ -1,0 +1,7 @@
+{
+  "name": "@pulsetide/checker",
+  "private": true,
+  "type": "module",
+  "scripts": { "build": "node ../scripts/package-function.mjs checker" },
+  "dependencies": { "@azure/functions": "^4.17.0", "@pulsetide/core": "*" }
+}

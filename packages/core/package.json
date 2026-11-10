@@ -1,0 +1,7 @@
+{
+  "name": "@pulsetide/core",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "dependencies": { "@azure/data-tables": "^13.3.2" }
+}

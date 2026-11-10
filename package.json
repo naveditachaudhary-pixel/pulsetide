@@ -1,0 +1,29 @@
+{
+  "name": "pulsetide",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/core",
+    "checker",
+    "api",
+    "web"
+  ],
+  "scripts": {
+    "build": "npm run build -w checker -w api -w web",
+    "test": "vitest run",
+    "typecheck": "tsc -p packages/core && tsc -p checker && tsc -p api && tsc -p web",
+    "dev": "npm run dev -w web",
+    "package:api": "node scripts/package-function.mjs api",
+    "package:checker": "node scripts/package-function.mjs checker"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "azurite": "^3.37.0",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  }
+}

@@ -1,0 +1,26 @@
+[
+  {
+    "id": "portfolio",
+    "name": "Portfolio",
+    "url": "https://naveditachaudhary-pixel.github.io/",
+    "expect": "Navedita"
+  },
+  {
+    "id": "cosignal",
+    "name": "Cosignal demo",
+    "url": "https://naveditachaudhary-pixel.github.io/cosignal/",
+    "expect": "Cosignal"
+  },
+  {
+    "id": "memory-agent",
+    "name": "Memory agent · live demo",
+    "url": "https://local-ai-agent-memory.streamlit.app/",
+    "note": "Hosted on Streamlit Cloud, which puts idle apps to sleep. A web request can't tell asleep from awake, so this shows whether the platform is reachable."
+  },
+  {
+    "id": "memory-agent-browser",
+    "name": "Memory agent · browser demo",
+    "url": "https://naveditachaudhary-pixel.github.io/local-ai-agent-memory/",
+    "expect": "Local AI Agent"
+  }
+]

@@ -1,0 +1,7 @@
+{
+  "name": "@pulsetide/api",
+  "private": true,
+  "type": "module",
+  "scripts": { "build": "node ../scripts/package-function.mjs api" },
+  "dependencies": { "@azure/functions": "^4.17.0", "@pulsetide/core": "*" }
+}
