@@ -48,17 +48,14 @@ async function attempt(site: Site, opts: CheckOptions): Promise<CheckResult> {
 
 /** Follow redirects by hand so cookies set along the way are sent back (some hosts need that). */
 async function fetchFollowingRedirects(url: string, fetchFn: FetchLike, signal: AbortSignal): Promise<Response> {
-  const cookies = new Map<string, string>();
+  const jar = new CookieJar();
   let current = url;
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
     const headers: Record<string, string> = { "user-agent": USER_AGENT, accept: "text/html,*/*" };
-    if (cookies.size) headers.cookie = [...cookies].map(([k, v]) => `${k}=${v}`).join("; ");
+    const cookie = jar.headerFor(current);
+    if (cookie) headers.cookie = cookie;
     const res = await fetchFn(current, { redirect: "manual", headers, signal });
-    for (const c of res.headers.getSetCookie?.() ?? []) {
-      const [pair] = c.split(";");
-      const eq = pair?.indexOf("=") ?? -1;
-      if (pair && eq > 0) cookies.set(pair.slice(0, eq).trim(), pair.slice(eq + 1).trim());
-    }
+    for (const c of res.headers.getSetCookie?.() ?? []) jar.store(c, current);
     const location = res.headers.get("location");
     if (res.status >= 300 && res.status < 400 && location) {
       current = new URL(location, current).toString();
@@ -67,6 +64,50 @@ async function fetchFollowingRedirects(url: string, fetchFn: FetchLike, signal: 
     return res;
   }
   throw new Error(`More than ${MAX_REDIRECTS} redirects`);
+}
+
+interface Cookie { name: string; value: string; domain: string; hostOnly: boolean; path: string }
+
+/**
+ * A small cookie jar that behaves like a browser for the cases redirects hit:
+ * cookies are only sent back to the site that set them (or its subdomains, if it said so),
+ * and a cookie set with Max-Age=0 or a past Expires date deletes the cookie instead of storing it.
+ */
+export class CookieJar {
+  private cookies = new Map<string, Cookie>();
+
+  store(header: string, requestUrl: string, now = Date.now()): void {
+    const url = new URL(requestUrl);
+    const [pair, ...attrs] = header.split(";");
+    const eq = pair?.indexOf("=") ?? -1;
+    if (!pair || eq <= 0) return;
+    const name = pair.slice(0, eq).trim(), value = pair.slice(eq + 1).trim();
+
+    let domain = url.hostname, hostOnly = true, path = "/", expired = false;
+    for (const attr of attrs) {
+      const [rawKey, ...rest] = attr.split("=");
+      const key = rawKey?.trim().toLowerCase(), val = rest.join("=").trim();
+      if (key === "domain" && val) {
+        const d = val.replace(/^\./, "").toLowerCase();
+        if (url.hostname !== d && !url.hostname.endsWith(`.${d}`)) return; // a site can't set cookies for another site
+        domain = d; hostOnly = false;
+      } else if (key === "path" && val.startsWith("/")) path = val;
+      else if (key === "max-age" && /^-?\d+$/.test(val)) expired = Number(val) <= 0;
+      else if (key === "expires" && !Number.isNaN(Date.parse(val))) expired ||= Date.parse(val) <= now;
+    }
+
+    const id = `${name}|${domain}|${path}`;
+    if (expired) this.cookies.delete(id);
+    else this.cookies.set(id, { name, value, domain, hostOnly, path });
+  }
+
+  headerFor(requestUrl: string): string {
+    const url = new URL(requestUrl);
+    const matches = [...this.cookies.values()].filter((c) =>
+      (c.hostOnly ? url.hostname === c.domain : url.hostname === c.domain || url.hostname.endsWith(`.${c.domain}`)) &&
+      url.pathname.startsWith(c.path));
+    return matches.map((c) => `${c.name}=${c.value}`).join("; ");
+  }
 }
 
 function describe(err: unknown): string {
