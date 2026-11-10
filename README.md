@@ -1,8 +1,13 @@
 # Pulsetide
 
 [![CI/CD](https://github.com/naveditachaudhary-pixel/pulsetide/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/naveditachaudhary-pixel/pulsetide/actions/workflows/ci-cd.yml)
+[![Checks](https://github.com/naveditachaudhary-pixel/pulsetide/actions/workflows/checks.yml/badge.svg)](https://github.com/naveditachaudhary-pixel/pulsetide/actions/workflows/checks.yml)
 
-A serverless status page for my portfolio demos. Every 5 minutes an Azure Function checks each site and records whether it's up, how fast it answered, and why it failed if it did. A React dashboard on Azure Static Web Apps shows the current status, 90 days of uptime, 24 hours of response times and recent incidents.
+**[Live status page →](https://naveditachaudhary-pixel.github.io/pulsetide/)**
+
+A status page for my portfolio demos. About every 5 minutes, each site is checked and the results are recorded: whether it's up, how fast it answered, and why it failed if it did. A React dashboard shows the current status, 90 days of uptime, 24 hours of response times and recent incidents.
+
+It runs entirely on GitHub today, using Actions for the checks and Pages for the dashboard. The same code also deploys to Azure Functions, Table Storage and Static Web Apps, and both setups share the check logic and its tests.
 
 ![Pulsetide dashboard](docs/screenshot.png)
 
@@ -10,7 +15,7 @@ A serverless status page for my portfolio demos. Every 5 minutes an Azure Functi
 
 ## What it does
 
-- **Checks every 5 minutes** from a timer-triggered Azure Function, and retries once before calling anything down, so a single dropped request isn't an outage.
+- **Checks about every 5 minutes**, and retries once before calling anything down, so a single dropped request isn't an outage.
 - **Catches "successful" failures.** A site can return HTTP 200 and still be broken, for example a hosting error page. Each site can list text the page must contain, and if it's missing, the check fails.
 - **Three states, in plain words:** *Operational*, *Slow* (over 2.5 s by default) and *Down*, with the reason, such as "HTTP 503", "Domain not found" or "No response within 10 s".
 - **Incidents** open when a site goes down and close when it recovers, with start time, cause and duration.
@@ -18,6 +23,24 @@ A serverless status page for my portfolio demos. Every 5 minutes an Azure Functi
 - **Honest about its limits.** Streamlit Cloud puts idle apps to sleep, and an HTTP request can't tell a sleeping app from an awake one. The dashboard says so instead of reporting a guess.
 
 ## Architecture
+
+### How it runs today: GitHub only
+
+```mermaid
+flowchart LR
+    T[Scheduled workflow<br/>about every 5 min] --> R[run-checks<br/>GitHub Actions]
+    R -->|HTTP checks| S[Portfolio · Cosignal · memory agent demos]
+    R -->|status.json + history| B[(status-data branch)]
+    B -->|fetched by the browser| W[React dashboard<br/>GitHub Pages]
+```
+
+- **Checks:** the [Checks workflow](.github/workflows/checks.yml) runs the same check code as the Azure Function. It keeps its history as a few JSON files on a `status-data` branch.
+- **Data branch:** each run replaces that branch's single commit, so the repo doesn't grow by thousands of commits.
+- **Dashboard:** built once on GitHub Pages. It reads `status.json` straight from the data branch, so new results show up without redeploying.
+- **Size limits:** raw checks are kept for 25 hours, and daily rollups for about a year. The branch stays well under 1 MB.
+- **Caveat:** GitHub starts scheduled jobs on a best-effort basis, so runs can be a few minutes late. GitHub also pauses scheduled workflows in a public repo after 60 days without activity. If that happens, re-enable it from the Actions tab.
+
+### Azure version
 
 ```mermaid
 flowchart LR
@@ -39,6 +62,7 @@ flowchart LR
 | `web/` | Azure Static Web Apps (Free) | React + TypeScript dashboard built with Vite |
 | `packages/core/` | Shared by all three | Check logic, storage, incident tracking and uptime maths, with no Azure-specific code except the storage adapter |
 | `sites.json` | Bundled into the checker and API | The list of sites to watch, validated at startup |
+| `scripts/run-checks.ts` | GitHub Actions (scheduled) | The GitHub version of the checker: same checks, with history kept in JSON files instead of Table Storage |
 
 The checker is a separate function app because Static Web Apps' built-in functions only support HTTP triggers, not timers.
 
@@ -68,12 +92,20 @@ Edit `sites.json` and push:
 ```bash
 npm install
 npm run dev          # dashboard at http://localhost:5173 with sample data (clearly labelled)
-npm test             # 24 tests: unit, Azure Table Storage against Azurite, API, timer job, UI
+npm test             # 26 tests: unit, Azure Table Storage against Azurite, API, timer job, UI
 ```
 
 The tests start [Azurite](https://learn.microsoft.com/azure/storage/common/storage-use-azurite), Microsoft's local storage emulator, so the real Table Storage queries are tested without an Azure account.
 
 ## Deploying
+
+### On GitHub (current)
+
+1. In the repo, go to **Settings → Pages** and set **Source** to **GitHub Actions**.
+2. Push to `main`. The CI/CD workflow tests everything and publishes the dashboard.
+3. In **Actions → Checks**, click **Run workflow** once to create the data branch. After that it runs on its own schedule.
+
+### On Azure
 
 Pushing to `main` runs the [CI/CD workflow](.github/workflows/ci-cd.yml):
 1. It type-checks and runs every test.

@@ -6,3 +6,4 @@ export * from "./record.js";
 export * from "./summary.js";
 export * from "./run.js";
 export { simulateHistory } from "./sample.js";
+export * from "./fileStore.js";

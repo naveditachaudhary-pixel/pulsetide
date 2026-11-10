@@ -6,6 +6,9 @@ import { Incidents } from "./Incidents";
 
 const REFRESH_MS = 60_000;
 const REPO = "https://github.com/naveditachaudhary-pixel/pulsetide";
+// Where the status comes from: the Azure API by default, or a JSON file when hosted on GitHub.
+const STATUS_URL = import.meta.env.VITE_STATUS_URL || "/api/status";
+const ON_GITHUB = import.meta.env.VITE_HOSTING === "github";
 
 export function App() {
   const [data, setData] = useState<StatusPayload | null>(null);
@@ -14,7 +17,7 @@ export function App() {
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch("/api/status", { headers: { accept: "application/json" } });
+      const res = await fetch(STATUS_URL, { headers: { accept: "application/json" }, cache: "no-store" });
       const body = await res.json().catch(() => null);
       if (!res.ok) throw new Error(body?.error ?? `The status service answered ${res.status}.`);
       setData(body as StatusPayload);
@@ -39,7 +42,7 @@ export function App() {
         <div>
           <p className="eyebrow">Pulsetide</p>
           <h1>Status <em>of my projects</em></h1>
-          <p className="lede">Live uptime and response times for the demos in my portfolio, checked every 5 minutes from Azure.</p>
+          <p className="lede">Live uptime and response times for the demos in my portfolio, checked {ON_GITHUB ? "about every 5 minutes by a scheduled GitHub Actions job" : "every 5 minutes from Azure"}.</p>
         </div>
         <nav className="links">
           <a className="pill" href="https://naveditachaudhary-pixel.github.io/" target="_blank" rel="noopener">Portfolio ↗</a>
@@ -78,7 +81,7 @@ export function App() {
       )}
 
       <footer>
-        <span>Built with React, TypeScript, Azure Functions, Table Storage and Static Web Apps.</span>
+        <span>{ON_GITHUB ? "Built with React and TypeScript. Checks run on GitHub Actions; the same code also deploys to Azure Functions." : "Built with React, TypeScript, Azure Functions, Table Storage and Static Web Apps."}</span>
         <span>© 2026 Navedita Chaudhary</span>
       </footer>
     </div>

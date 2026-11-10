@@ -23,8 +23,8 @@ jobs:
       - run: npm run typecheck
       - name: Unit, integration (Azurite) and UI tests
         run: npm test
-      - name: Package the API, the checker and the dashboard
-        run: npm run build
+      - name: Package the API, the checker, the scheduled runner and the dashboard
+        run: npm run build && npm run build:runner
       - uses: actions/upload-artifact@v4
         with:
           name: build
@@ -33,6 +33,37 @@ jobs:
             .deploy/
             web/dist/
 
+  pages:
+    name: Deploy dashboard (GitHub Pages)
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Build the dashboard to read status.json from the status-data branch
+        run: npm run build -w web
+        env:
+          VITE_BASE: /${{ github.event.repository.name }}/
+          VITE_HOSTING: github
+          VITE_STATUS_URL: https://raw.githubusercontent.com/${{ github.repository }}/status-data/status.json
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/dist
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  # The two jobs below deploy to Azure instead. They skip themselves until the Azure secrets exist.
   deploy-dashboard:
     name: Deploy dashboard + API (Static Web Apps)
     needs: test

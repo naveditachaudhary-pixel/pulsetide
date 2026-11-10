@@ -24,4 +24,5 @@ function sampleApi(): Plugin {
   };
 }
 
-export default defineConfig({ plugins: [react(), sampleApi()] });
+// VITE_BASE is "/pulsetide/" when published to GitHub Pages (a project site lives under the repo name).
+export default defineConfig({ base: process.env.VITE_BASE || "/", plugins: [react(), sampleApi()] });

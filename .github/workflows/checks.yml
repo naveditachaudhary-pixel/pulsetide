@@ -1,0 +1,50 @@
+name: Checks
+
+# Runs the site checks on a schedule and saves the results to the "status-data" branch.
+# GitHub runs scheduled jobs on a best-effort basis, so runs can start a few minutes late.
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: checks
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build:runner
+
+      - name: Load previous results
+        run: |
+          mkdir -p data
+          if git fetch --depth 1 origin status-data 2>/dev/null; then
+            git archive FETCH_HEAD | tar -x -C data
+          else
+            echo "First run: starting with empty history."
+          fi
+
+      - name: Check every site
+        run: node .deploy/run-checks.mjs data
+
+      - name: Save results
+        # One commit, force-pushed each time, so the data branch never grows a long history.
+        run: |
+          cd data
+          git init -q -b status-data
+          git add -A
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -q -m "Status at $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" status-data

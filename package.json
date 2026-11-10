@@ -11,10 +11,11 @@
   "scripts": {
     "build": "npm run build -w checker -w api -w web",
     "test": "vitest run",
-    "typecheck": "tsc -p packages/core && tsc -p checker && tsc -p api && tsc -p web",
+    "typecheck": "tsc -p packages/core && tsc -p checker && tsc -p api && tsc -p web && tsc -p scripts",
     "dev": "npm run dev -w web",
     "package:api": "node scripts/package-function.mjs api",
-    "package:checker": "node scripts/package-function.mjs checker"
+    "package:checker": "node scripts/package-function.mjs checker",
+    "build:runner": "node scripts/build-runner.mjs"
   },
   "engines": {
     "node": ">=22"
