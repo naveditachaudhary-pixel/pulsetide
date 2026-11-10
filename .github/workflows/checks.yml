@@ -2,6 +2,7 @@ name: Checks
 
 # Runs the site checks on a schedule and saves the results to the "status-data" branch.
 # GitHub runs scheduled jobs on a best-effort basis, so runs can start a few minutes late.
+# If the schedule ever stops (GitHub pauses it after 60 days without activity), re-enable it in the Actions tab.
 on:
   schedule:
     - cron: "*/5 * * * *"
