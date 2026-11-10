@@ -22,5 +22,11 @@
     "name": "Memory agent · browser demo",
     "url": "https://naveditachaudhary-pixel.github.io/local-ai-agent-memory/",
     "expect": "Local AI Agent"
+  },
+  {
+    "id": "rehearsal",
+    "name": "Rehearsal prototype",
+    "url": "https://naveditachaudhary-pixel.github.io/rehearsal/",
+    "expect": "Rehearsal"
   }
 ]

@@ -29,7 +29,7 @@ It runs entirely on GitHub today, using Actions for the checks and Pages for the
 ```mermaid
 flowchart LR
     T[Long-running workflow<br/>checks every 5 min] --> R[run-checks<br/>GitHub Actions]
-    R -->|HTTP checks| S[Portfolio · Cosignal · memory agent demos]
+    R -->|HTTP checks| S[Portfolio · Cosignal · Rehearsal · memory agent demos]
     R -->|status.json + history| B[(status-data branch)]
     B -->|fetched by the browser| W[React dashboard<br/>GitHub Pages]
 ```
