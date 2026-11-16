@@ -2,18 +2,19 @@ name: Checks
 
 # Checks every site about every 5 minutes and saves the results to the "status-data" branch.
 # GitHub starts scheduled jobs on a best-effort basis and often skips short intervals,
-# so instead of relying on a 5-minute schedule, each run loops for about 5.5 hours,
-# checking every 5 minutes. The hourly schedule only has to fire once in that window
+# so instead of relying on a 5-minute schedule, each run loops for just under 6 hours (GitHub's job limit),
+# checking every 5 minutes. The schedule (twice an hour) only has to fire once in that window
 # to keep the checks continuous; the concurrency group queues the next run behind it.
 # If the schedule ever stops (GitHub pauses it after 60 days without activity), re-enable it in the Actions tab.
 on:
   schedule:
     - cron: "7 * * * *"
+    - cron: "37 * * * *"
   workflow_dispatch:
     inputs:
       loop_minutes:
         description: "How long to keep checking (minutes). Use 0 for a single check."
-        default: "330"
+        default: "350"
 
 permissions:
   contents: write
@@ -25,7 +26,7 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 345
+    timeout-minutes: 358
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -46,7 +47,7 @@ jobs:
 
       - name: Check every 5 minutes, saving results after each round
         env:
-          LOOP_MINUTES: ${{ inputs.loop_minutes || '330' }}
+          LOOP_MINUTES: ${{ inputs.loop_minutes || '350' }}
           PUSH_URL: https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
         run: |
           end=$(( $(date +%s) + LOOP_MINUTES * 60 ))
